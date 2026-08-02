@@ -1,0 +1,4 @@
+Starting pandas.read_csv() without chunksize...
+Input: Z:\lichess_db_standard_rated_2026-06.pgn\lichess_db_standard_rated_2026-06.pgn
+Raw file size: 8.913 GiB
+UnicodeDecodeError after 346.63 seconds: 'utf-8' codec can't decode byte 0x93 in position 0: invalid start byte

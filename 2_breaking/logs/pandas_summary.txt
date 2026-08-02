@@ -1,0 +1,5 @@
+status=ERROR
+exit_code=3
+elapsed_seconds=350.14
+raw_file_size_gib=8.913
+peak_pandas_rss_gib=8.795

@@ -1,0 +1,84 @@
+﻿PHASE 2 — THE BREAKING POINT
+============================
+
+Project:
+First-Move Advantage in Online Chess
+
+Experiment date:
+2026-08-02 02:03:22
+
+Computer:
+S18B
+
+DATASET
+-------
+
+Raw file:
+lichess_db_standard_rated_2026-06.pgn
+
+Raw file size:
+8.91 GB
+9570369536 bytes
+
+Excel test file:
+excel_over_limit.csv
+
+Excel test-file size:
+400.45 MB
+419906699 bytes
+
+EXCEL BREAKING-POINT TEST
+-------------------------
+
+Procedure:
+1. Generated a CSV containing more than Excel's 1,048,576-row worksheet limit.
+2. Attempted to open the CSV in Microsoft Excel.
+3. Recorded the warning, truncation, failure, or loading behavior.
+4. Saved evidence under 2_breaking/screenshots/.
+
+Command used to generate the Excel test file:
+[PASTE THE EXACT COMMAND YOU RAN HERE]
+
+Observed Excel result:
+[DESCRIBE THE EXCEL WARNING, TRUNCATION, OR FAILURE HERE]
+
+Evidence:
+screenshots/excel_failure.png
+
+
+PANDAS BREAKING-POINT TEST
+--------------------------
+
+Commands run:
+[PASTE THE EXACT PYTHON COMMANDS YOU RAN HERE]
+
+Example format:
+python .\pandas_pgn_test.py
+python .\pandas_break_test.py
+
+Observed result:
+[ENTER OUT-OF-MEMORY ERROR, MAXIMUM MEMORY, OR WALL-CLOCK TIME HERE]
+
+Output files:
+logs/pandas_output.txt
+logs/pandas_error.txt
+logs/pandas_memory_log.txt
+logs/pandas_summary.txt
+
+Evidence:
+screenshots/pandas_memory_failure.png
+
+
+REPRODUCIBILITY NOTES
+---------------------
+
+The raw PGN and the generated 410 MB CSV are intentionally excluded from
+GitHub because GitHub does not host the multi-gigabyte source dataset.
+
+The repository contains:
+- experiment scripts
+- console output
+- memory measurements
+- screenshots
+- a small sample file
+- this experimentation record

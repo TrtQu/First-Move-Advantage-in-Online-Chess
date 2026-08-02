@@ -1,0 +1,12 @@
+
+# Large local datasets
+*.pgn
+excel_over_limit.csv
+*.zst
+*.gz
+
+# Python environment and temporary files
+.venv/
+venv/
+__pycache__/
+*.pyc
