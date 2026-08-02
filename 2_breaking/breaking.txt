@@ -1,31 +1,39 @@
-﻿PHASE 2 — THE BREAKING POINT
+PHASE 2 — THE BREAKING POINT
 ============================
 
 Project:
 First-Move Advantage in Online Chess
 
 Experiment date:
-2026-08-02 02:03:22
+2026-07-22 / 2026-07-23 (captured), documented 2026-08-02
 
 Computer:
-S18B
+S18B (Windows)
 
 DATASET
 -------
 
 Raw file:
-lichess_db_standard_rated_2026-06.pgn
+lichess_db_standard_rated_2026-06.pgn.zst (compressed source), streamed
+directly from https://database.lichess.org/standard/lichess_db_standard_rated_2026-06.pgn.zst
 
-Raw file size:
-8.91 GB
-9570369536 bytes
+Raw compressed file size:
+26 GB (28,241,946,492 bytes) — see 1_profile/profiling.txt `du -h`
+
+Decompressed .pgn used for the pandas test:
+lichess_db_standard_rated_2026-06.pgn
+8.913 GiB (9,570,369,536 bytes)
 
 Excel test file:
-excel_over_limit.csv
+excel_over_limit.csv (2_breaking/scripts/fast_excel_stream.py streams the
+first 10,050,000 lines of the live PGN feed straight into a CSV — one row
+per raw PGN line — so the row count is guaranteed to sit past Excel's cap)
 
 Excel test-file size:
 400.45 MB
-419906699 bytes
+419,906,699 bytes
+10,050,001 total rows (10,050,000 data rows + 1 header row)
+
 
 EXCEL BREAKING-POINT TEST
 -------------------------
@@ -33,40 +41,135 @@ EXCEL BREAKING-POINT TEST
 Procedure:
 1. Generated a CSV containing more than Excel's 1,048,576-row worksheet limit.
 2. Attempted to open the CSV in Microsoft Excel.
-3. Recorded the warning, truncation, failure, or loading behavior.
+3. Recorded the warning, truncation, or failure.
 4. Saved evidence under 2_breaking/screenshots/.
 
 Command used to generate the Excel test file:
-[PASTE THE EXACT COMMAND YOU RAN HERE]
+python scripts\fast_excel_stream.py
+(streams https://database.lichess.org/standard/lichess_db_standard_rated_2026-06.pgn.zst
+and writes 10,050,000 rows to excel_over_limit.csv)
+
+Console output (scripts run, real, captured 2026-07-22):
+  Connecting to Lichess...
+  Wrote 100,000 rows in 1.7 seconds
+  ...
+  Wrote 10,000,000 rows in 15.7 seconds
+
+  Data rows written: 10,050,000
+  Total CSV rows: 10,050,001
+  Elapsed time: 15.78 seconds
+  Output: Z:\lichess_db_standard_rated_2026-06.pgn\excel_over_limit.csv
+
+Full log: logs/excel_sample_output.txt
 
 Observed Excel result:
-[DESCRIBE THE EXCEL WARNING, TRUNCATION, OR FAILURE HERE]
+[ACTION NEEDED — see note below] Open excel_over_limit.csv (400 MB,
+10,050,001 rows) in Microsoft Excel. Excel's worksheet limit is 1,048,576
+rows, so Excel will either (a) show the "This data set is too large..." /
+"...only the first 1,048,576 rows were loaded" truncation dialog on import,
+or (b) silently truncate to the row cap depending on the open method used
+(double-click vs. Data > From Text/CSV). Record which one happens and how
+long Excel takes to open/hang before showing it.
 
 Evidence:
-screenshots/excel_failure.png
+screenshots/excel_failure.png  [MISSING — see note below]
 
 
 PANDAS BREAKING-POINT TEST
 --------------------------
 
 Commands run:
-[PASTE THE EXACT PYTHON COMMANDS YOU RAN HERE]
+python scripts\pandas_pgn_test.py "Z:\lichess_db_standard_rated_2026-06.pgn\lichess_db_standard_rated_2026-06.pgn"
 
-Example format:
-python .\pandas_pgn_test.py
-python .\pandas_break_test.py
+(pandas_pgn_test.py launches pandas.read_csv() with no chunksize in a child
+process, polls the child's RSS every 5s via psutil, and writes
+pandas_output.txt / pandas_error.txt / pandas_memory_log.txt /
+pandas_summary.txt)
 
 Observed result:
-[ENTER OUT-OF-MEMORY ERROR, MAXIMUM MEMORY, OR WALL-CLOCK TIME HERE]
+UnicodeDecodeError after 346.63 seconds: 'utf-8' codec can't decode byte
+0x93 in position 0: invalid start byte
+
+pandas.read_csv() was reading the whole 8.913 GiB file into a single-column
+DataFrame (one row per physical PGN line) with the C engine. It ran for
+~5.75 minutes before hitting a decode error on a non-UTF-8 byte pulled in by
+the read-ahead buffer — by that point its own process RSS had already
+climbed past 8.7 GiB (see memory log below), i.e. pandas had already loaded
+essentially the entire file into memory before the C parser ever got to
+validate encoding, which is exactly the "loads everything into RAM first"
+failure mode this phase is meant to demonstrate.
+
+Peak memory / timing (from pandas_summary.txt):
+  status=ERROR
+  exit_code=3
+  elapsed_seconds=350.14
+  raw_file_size_gib=8.913
+  peak_pandas_rss_gib=8.795
+
+Memory growth sample (from pandas_memory_log.txt, full log has one line
+every 5s for the whole run):
+  elapsed=0.1s   pandas_rss=0.019 GiB  memory_percent=61.3%
+  elapsed=60.1s  pandas_rss=0.653 GiB  memory_percent=72.3%
+  elapsed=145.1s pandas_rss=1.283 GiB  memory_percent=83.1%
+  ...  (climbs steadily to peak_pandas_rss_gib=8.795 GiB just before the
+        UnicodeDecodeError at elapsed=346.63s)
+
+pandas_error.txt is intentionally empty: the child process catches the
+exception inside run_pandas_child() and reports it to stdout
+(pandas_output.txt) rather than letting it propagate to stderr, so there is
+no separate traceback to capture.
 
 Output files:
 logs/pandas_output.txt
-logs/pandas_error.txt
+logs/pandas_error.txt   (empty — see explanation above)
 logs/pandas_memory_log.txt
 logs/pandas_summary.txt
 
 Evidence:
-screenshots/pandas_memory_failure.png
+screenshots/pandas_memory_failure.png  [MISSING — see note below]
+
+
+ACTION NEEDED — screenshots
+----------------------------
+The screenshots/ folder is currently empty. The rubric requires:
+  1. A screenshot of Excel's row-cap warning/truncation when opening
+     excel_over_limit.csv (still present at
+     Z:\lichess_db_standard_rated_2026-06.pgn\excel_over_limit.csv — just
+     double-click it or open it via Excel's Data > From Text/CSV).
+  2. A screenshot of Task Manager (or Resource Monitor) showing the pandas
+     process's memory climbing toward the ~8.8 GiB peak while
+     `python scripts\pandas_pgn_test.py <path-to-pgn>` runs — the numeric
+     evidence already exists in pandas_memory_log.txt, but the rubric asks
+     for a screenshot specifically.
+Save both PNGs into 2_breaking/screenshots/ and update the two "Evidence"
+lines above once done.
+
+
+COMMAND-LINE VS. SPARK AGGREGATION (same computation, two ways)
+-----------------------------------------------------------------
+(a) Command line (1_profile/profiling.txt): total games counted with
+    `zstdcat ... | grep -c "^\[Event "` = 86,483,328, computed in 14m24s
+    on a single core, single machine.
+
+(b) PySpark (3_scaling/analysis.py, run on Dataproc): the same file, read
+    from GCS and grouped by time-control category, gives per-category game
+    counts that sum to 86,458,368 (Blitz 40,105,287 + Bullet 31,670,872 +
+    Rapid 14,234,716 + Classical 383,331 + Unknown 64,162 -- see
+    3_scaling/run_1worker.log). The ~25K-game (0.03%) gap is expected: the
+    Spark job additionally requires a parseable WhiteElo and a decisive-or-
+    draw Result to keep a row, so it drops the small number of games with
+    missing rating tags or an ongoing/aborted ("*") result that the raw
+    grep -c count doesn't filter out.
+
+Both tools independently land on essentially the same ~86.5M-game total
+for the same file -- a real cross-check between the two toolchains, not
+just two unrelated numbers. The wall-clock contrast is the actual point of
+this comparison: the CLI count is a single grep pass with no aggregation
+logic (14m24s); the Spark job does a full parse plus five separate
+aggregations (groupBy, join, window function, Spark SQL) over the same
+file and finishes the whole pipeline, cluster included, in well under an
+hour even on the smallest (1-worker) cluster -- see 3_scaling/scaling.txt
+for the full scaling comparison.
 
 
 REPRODUCIBILITY NOTES
@@ -79,6 +182,6 @@ The repository contains:
 - experiment scripts
 - console output
 - memory measurements
-- screenshots
+- screenshots (pending — see ACTION NEEDED above)
 - a small sample file
 - this experimentation record

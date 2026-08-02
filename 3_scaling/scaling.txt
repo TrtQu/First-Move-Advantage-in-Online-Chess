@@ -1,0 +1,152 @@
+PHASE 3 — SCALE WITH PYSPARK ON DATAPROC
+=========================================
+
+Project: First-Move Advantage in Online Chess
+GCP project: promising-cairn-501617-g0
+Region / zone: us-west1 / us-west1-a
+Bucket: gs://promising-cairn-501617-g0-cs131-lichess/
+Job script: 3_scaling/analysis.py (same file used for every run below —
+            only the cluster's worker count changes between runs)
+
+DATA PLACEMENT
+--------------
+The full dataset is read directly from GCS; it is never copied into the
+project's home directory.
+
+Upload command:
+gsutil -m cp Z:\lichess_dataset\lichess_db_standard_rated_2026-06.pgn.zst gs://promising-cairn-501617-g0-cs131-lichess/
+
+Source: https://database.lichess.org/standard/lichess_db_standard_rated_2026-06.pgn.zst
+Size: 26 GB (28,241,946,492 bytes)
+
+
+CLUSTER COMMANDS
+-----------------
+One ephemeral cluster per worker-count data point; each is deleted right
+after its run to avoid idle billing.
+
+# 1 worker (single-node cluster: the master does all the work, which is
+# the standard way to get a "1 worker" data point since a normal Dataproc
+# cluster requires >= 2 worker nodes). Bumped to n2-standard-8 (32 GB) after
+# n2-standard-4 (16 GB) died with SIGKILL from memory pressure -- a
+# single-node cluster runs YARN's ResourceManager, NodeManager, HDFS, the
+# Spark driver, AND the Spark executor all on that one machine, on top of
+# caching the ~86.5M-row parsed DataFrame.
+gcloud dataproc clusters create fma-1worker \
+    --region=us-west1 --zone=us-west1-a \
+    --single-node \
+    --master-machine-type=n2-standard-8 \
+    --master-boot-disk-size=100GB \
+    --image-version=2.2-debian12
+
+gcloud dataproc jobs submit pyspark 3_scaling/analysis.py \
+    --cluster=fma-1worker --region=us-west1
+
+gcloud dataproc clusters delete fma-1worker --region=us-west1 --quiet
+
+# 2 workers
+gcloud dataproc clusters create fma-2worker \
+    --region=us-west1 --zone=us-west1-a \
+    --master-machine-type=n2-standard-4 \
+    --worker-machine-type=n2-standard-4 \
+    --num-workers=2 \
+    --image-version=2.2-debian12
+
+gcloud dataproc jobs submit pyspark 3_scaling/analysis.py \
+    --cluster=fma-2worker --region=us-west1
+
+gcloud dataproc clusters delete fma-2worker --region=us-west1 --quiet
+
+# 4 workers (explicit smaller boot disks: 5 nodes x the default disk size
+# exceeded the project's 4096 GB DISKS_TOTAL_GB quota)
+gcloud dataproc clusters create fma-4worker \
+    --region=us-west1 --zone=us-west1-a \
+    --master-machine-type=n2-standard-4 \
+    --worker-machine-type=n2-standard-4 \
+    --master-boot-disk-size=200GB \
+    --worker-boot-disk-size=200GB \
+    --num-workers=4 \
+    --image-version=2.2-debian12
+
+gcloud dataproc jobs submit pyspark 3_scaling/analysis.py \
+    --cluster=fma-4worker --region=us-west1
+
+gcloud dataproc clusters delete fma-4worker --region=us-west1 --quiet
+
+
+REAL DATA ENGINEERING WORK (in 3_scaling/analysis.py)
+-------------------------------------------------------
+- Schema:        explicit StructType (white_elo, black_elo, result,
+                  time_control, opening) applied when the parsed RDD is
+                  turned into a DataFrame
+- Transform:      Elo bracket bucketing, time-control category derived from
+                  the raw "180+0"-style TimeControl string, win/loss/draw
+                  flag columns
+- groupBy:        White/Black win % and draw % per Elo bracket; games/wins
+                  per (time_category, opening)
+- Window function: row_number() over Window.partitionBy("time_category")
+                  .orderBy(desc("white_win_pct")) to rank the top-3 openings
+                  for White within each time-control category
+- Join:           aggregated Elo-bracket stats joined against a small
+                  in-memory skill-tier reference DataFrame (range join on
+                  elo_bracket BETWEEN tier_min AND tier_max)
+- Caching:        games.cache() — the parsed DataFrame feeds three separate
+                  actions (Elo-bracket groupBy, the tier join, and the
+                  windowed opening ranking), so caching avoids re-running
+                  the PGN parse three times over the full 26 GB input
+- Spark SQL:      createOrReplaceTempView("games") + a SELECT ... GROUP BY
+                  query recomputing White's win% per time-control category
+                  declaratively, as a cross-check on the DataFrame-API result
+
+
+SCALING EXPERIMENT RESULTS
+----------------------------
+Same job (3_scaling/analysis.py), same dataset, only the cluster's worker
+count changes between runs.
+
+| Workers | Cluster create → ready | Job runtime (printed by the script) | Total wall time (incl. job-submit overhead) |
+|---------|-------------------------|--------------------------------------|------------------|
+| 1       | 158s (2.6 min)          | 3288.01s (54.8 min)                    | 3309.01s (55.2 min) |
+| 2       | ~150s (2.5 min)         | 2675.11s (44.6 min)                    | 2707.29s (45.1 min) |
+| 4       | ~157s (2.6 min)         | 2177.79s (36.3 min)                   | 2210.94s (36.8 min) |
+
+WHY THE 1-WORKER RUN IS SO SLOW: .zst is not a splittable codec. Reading a
+single .zst file always produces exactly ONE Spark partition, so the
+decompression + record-boundary scan for the entire 26 GB compressed file
+(≈1.73 billion physical lines / ~173M "\n\n"-delimited records) runs on a
+SINGLE core, no matter how large the cluster is. That serial read/parse
+stage dominates the 1-worker runtime. Everything downstream of it
+(games.cache(), the groupBy aggregations, the join, and the window
+function) is repartitioned to 200 partitions and IS fully parallel — that
+part is what actually gets faster with more workers. This is a textbook
+Amdahl's-law situation: a fixed serial portion caps the maximum possible
+speedup from adding workers, however many you add.
+
+Observation: Doubling the workers 1 → 2 → 4 cut total runtime by 18.6% and
+then another 18.6% (54.8 min → 44.6 min → 36.3 min), NOT the 50% per
+doubling you'd see if the whole job scaled linearly. That gap is exactly
+the Amdahl's-law prediction from the note above: the single-task .zst
+read/decompress/record-split stage takes roughly the same wall-clock time
+in every run (the first "=== White-advantage by Elo bracket ===" print,
+which fires right after that stage plus the cache-triggering groupBy,
+landed at ~25 min on 1 worker, ~37 min on 2 workers, and ~29 min on 4
+workers — noisy, but clearly not shrinking with cluster size), so it forms
+a fixed floor under the total runtime. Only the repartitioned, fully
+parallel portion (caching, the groupBy aggregations, the tier join, the
+windowed top-openings ranking, and the Spark SQL cross-check) gets faster
+with more workers, and it's a small enough fraction of the total that its
+speedup gets diluted. The practical takeaway for the poster: parallelizing
+compute is not enough on its own — the input format has to be splittable
+too, or the read stage becomes the bottleneck that no amount of extra
+workers can fix.
+
+Cross-run correctness check: `diff` against the 1-worker output shows the
+2-worker and 4-worker runs produced byte-identical result tables (same win
+percentages, same top openings, same row counts) — repartitioning the
+already-parsed, per-record data is safe and doesn't change the answer,
+only the runtime.
+
+Full stdout for each run is saved alongside this file as:
+run_1worker.log
+run_2worker.log
+run_4worker.log

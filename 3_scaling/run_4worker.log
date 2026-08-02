@@ -1,0 +1,164 @@
+﻿python.exe : Job [6fa1f785b1f747b6be9608e87d1dbe93] submitted.
+At C:\Users\ilike\AppData\Local\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1:120 char:3
++   & "$exe_path" $run_args_array
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Job [6fa1f785b1...e93] submitted.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Waiting for job output...
+26/08/02 22:15:16 INFO SparkEnv: Registering MapOutputTracker
+26/08/02 22:15:16 INFO SparkEnv: Registering BlockManagerMaster
+26/08/02 22:15:16 INFO SparkEnv: Registering BlockManagerMasterHeartbeat
+26/08/02 22:15:16 INFO SparkEnv: Registering OutputCommitCoordinator
+26/08/02 22:15:17 INFO MetricsConfig: Loaded properties from hadoop-metrics2.properties
+26/08/02 22:15:17 INFO MetricsSystemImpl: Scheduled Metric snapshot period at 10 second(s).
+26/08/02 22:15:17 INFO MetricsSystemImpl: google-hadoop-file-system metrics system started
+26/08/02 22:15:18 INFO DataprocSparkPlugin: Registered 188 driver metrics
+26/08/02 22:15:19 INFO DefaultNoHARMFailoverProxyProvider: Connecting to ResourceManager at 
+fma-4worker-m.c.promising-cairn-501617-g0.internal./10.138.0.10:8032
+26/08/02 22:15:19 INFO AHSProxy: Connecting to Application History server at 
+fma-4worker-m.c.promising-cairn-501617-g0.internal./10.138.0.10:10200
+26/08/02 22:15:20 INFO Configuration: resource-types.xml not found
+26/08/02 22:15:20 INFO ResourceUtils: Unable to find 'resource-types.xml'.
+26/08/02 22:15:22 INFO YarnClientImpl: Submitted application application_1785708856770_0001
+26/08/02 22:15:23 INFO DefaultNoHARMFailoverProxyProvider: Connecting to ResourceManager at 
+fma-4worker-m.c.promising-cairn-501617-g0.internal./10.138.0.10:8030
+26/08/02 22:15:25 INFO GoogleCloudStorageImpl: Ignoring exception of type GoogleJsonResponseException; verified object 
+already exists with desired state.
+26/08/02 22:15:26 INFO GoogleHadoopOutputStream: hflush(): No-op due to rate limit (RateLimiter[stableRate=0.2qps]): 
+readers will *not* yet see flushed data for gs://dataproc-temp-us-west1-1074903516627-orsdpgui/702eb26c-4003-47af-b99e-
+dd96a3426f29/spark-job-history/application_1785708856770_0001.inprogress [CONTEXT ratelimit_period="1 MINUTES" ]
+=== White-advantage by Elo bracket ===
++-----------+----------+----------+------+-----------+-------------+-------------+--------+
+|elo_bracket|white_wins|black_wins|draws |total_games|white_win_pct|black_win_pct|draw_pct|
++-----------+----------+----------+------+-----------+-------------+-------------+--------+
+|400        |16120     |33437     |4718  |54275      |29.7         |61.61        |8.69    |
+|500        |53979     |74543     |9106  |137628     |39.22        |54.16        |6.62    |
+|600        |151068    |181058    |18665 |350791     |43.06        |51.61        |5.32    |
+|700        |346501    |379922    |32341 |758764     |45.67        |50.07        |4.26    |
+|800        |675870    |695667    |53726 |1425263    |47.42        |48.81        |3.77    |
+|900        |1122069   |1102599   |78856 |2303524    |48.71        |47.87        |3.42    |
+|1000       |1638887   |1559575   |107271|3305733    |49.58        |47.18        |3.24    |
+|1100       |2048818   |1961331   |130888|4141037    |49.48        |47.36        |3.16    |
+|1200       |2535788   |2436724   |160061|5132573    |49.41        |47.48        |3.12    |
+|1300       |3011253   |2891059   |193051|6095363    |49.4         |47.43        |3.17    |
+|1400       |3424839   |3277669   |223909|6926417    |49.45        |47.32        |3.23    |
+|1500       |3967752   |3890774   |271298|8129824    |48.8         |47.86        |3.34    |
+|1600       |4095382   |3900138   |292884|8288404    |49.41        |47.06        |3.53    |
+|1700       |4134481   |3906614   |313809|8354904    |49.49        |46.76        |3.76    |
+|1800       |3971101   |3682010   |315582|7968693    |49.83        |46.21        |3.96    |
+|1900       |3487344   |3169837   |290929|6948110    |50.19        |45.62        |4.19    |
+|2000       |2781487   |2465685   |241216|5488388    |50.68        |44.93        |4.4     |
+|2100       |2040312   |1744480   |182168|3966960    |51.43        |43.98        |4.59    |
+|2200       |1381277   |1151434   |130424|2663135    |51.87        |43.24        |4.9     |
+|2300       |906135    |729001    |90688 |1725824    |52.5         |42.24        |5.25    |
+|2400       |535078    |420016    |56694 |1011788    |52.88        |41.51        |5.6     |
+|2500       |299623    |229231    |34028 |562882     |53.23        |40.72        |6.05    |
+|2600       |164261    |124985    |20820 |310066     |52.98        |40.31        |6.71    |
+|2700       |88042     |68148     |14097 |170287     |51.7         |40.02        |8.28    |
+|2800       |48320     |34617     |9479  |92416      |52.29        |37.46        |10.26   |
+|2900       |29244     |16861     |13973 |60078      |48.68        |28.07        |23.26   |
+|3000       |21556     |8222      |25543 |55321      |38.97        |14.86        |46.17   |
+|3100       |10993     |3330      |11519 |25842      |42.54        |12.89        |44.57   |
+|3200       |1990      |914       |274   |3178       |62.62        |28.76        |8.62    |
++-----------+----------+----------+------+-----------+-------------+-------------+--------+
+
+=== White-advantage by Elo bracket, joined with skill-tier labels ===
++-----------+------------+-------------+-------------+--------+-----------+
+|elo_bracket|tier_label  |white_win_pct|black_win_pct|draw_pct|total_games|
++-----------+------------+-------------+-------------+--------+-----------+
+|400        |Beginner    |29.7         |61.61        |8.69    |54275      |
+|500        |Beginner    |39.22        |54.16        |6.62    |137628     |
+|600        |Beginner    |43.06        |51.61        |5.32    |350791     |
+|700        |Beginner    |45.67        |50.07        |4.26    |758764     |
+|800        |Novice      |47.42        |48.81        |3.77    |1425263    |
+|900        |Novice      |48.71        |47.87        |3.42    |2303524    |
+|1000       |Novice      |49.58        |47.18        |3.24    |3305733    |
+|1100       |Novice      |49.48        |47.36        |3.16    |4141037    |
+|1200       |Intermediate|49.41        |47.48        |3.12    |5132573    |
+|1300       |Intermediate|49.4         |47.43        |3.17    |6095363    |
+|1400       |Intermediate|49.45        |47.32        |3.23    |6926417    |
+|1500       |Intermediate|48.8         |47.86        |3.34    |8129824    |
+|1600       |Advanced    |49.41        |47.06        |3.53    |8288404    |
+|1700       |Advanced    |49.49        |46.76        |3.76    |8354904    |
+|1800       |Advanced    |49.83        |46.21        |3.96    |7968693    |
+|1900       |Advanced    |50.19        |45.62        |4.19    |6948110    |
+|2000       |Expert      |50.68        |44.93        |4.4     |5488388    |
+|2100       |Expert      |51.43        |43.98        |4.59    |3966960    |
+|2200       |Expert      |51.87        |43.24        |4.9     |2663135    |
+|2300       |Expert      |52.5         |42.24        |5.25    |1725824    |
+|2400       |Master      |52.88        |41.51        |5.6     |1011788    |
+|2500       |Master      |53.23        |40.72        |6.05    |562882     |
+|2600       |Master      |52.98        |40.31        |6.71    |310066     |
+|2700       |Master      |51.7         |40.02        |8.28    |170287     |
+|2800       |Master      |52.29        |37.46        |10.26   |92416      |
+|2900       |Master      |48.68        |28.07        |23.26   |60078      |
+|3000       |Master      |38.97        |14.86        |46.17   |55321      |
+|3100       |Master      |42.54        |12.89        |44.57   |25842      |
+|3200       |Master      |62.62        |28.76        |8.62    |3178       |
++-----------+------------+-------------+-------------+--------+-----------+
+
+=== Top 3 openings for White, by time-control category ===
++-------------+-----------------------------------------------------+------------+----------+-------------+----+
+|time_category|opening                                              |games_played|white_wins|white_win_pct|rank|
++-------------+-----------------------------------------------------+------------+----------+-------------+----+
+|Blitz        |Zukertort Opening: Tennison Gambit, Brigg's Trap     |2231        |1696      |76.02        |1   |
+|Blitz        |Italian Game: Two Knights Defense, Knight Attack     |11143       |8104      |72.73        |2   |
+|Blitz        |Italian Game: Giuoco Piano, Aitken Variation         |842         |593       |70.43        |3   |
+|Bullet       |Vienna Game: Stanley Variation, Meitner-Mieses Gambit|2955        |2045      |69.2         |1   |
+|Bullet       |Zukertort Opening: Tennison Gambit, Brigg's Trap     |2388        |1648      |69.01        |2   |
+|Bullet       |Italian Game: Two Knights Defense, Knight Attack     |6574        |4501      |68.47        |3   |
+|Classical    |Italian Game: Two Knights Defense, Fried Liver Attack|575         |399       |69.39        |1   |
+|Classical    |King's Knight Opening                                |1636        |1104      |67.48        |2   |
+|Classical    |Petrov's Defense: Damiano Variation                  |768         |515       |67.06        |3   |
+|Rapid        |Italian Game: Giuoco Piano, Aitken Variation         |854         |614       |71.9         |1   |
+|Rapid        |Italian Game: Two Knights Defense, Knight Attack     |12700       |9004      |70.9         |2   |
+|Rapid        |Italian Game: Two Knights Defense, Fried Liver Attack|19421       |13752     |70.81        |3   |
+|Unknown      |King's Knight Opening                                |594         |473       |79.63        |1   |
+|Unknown      |King's Pawn Game                                     |3644        |2878      |78.98        |2   |
+|Unknown      |Queen's Pawn Game                                    |2534        |1659      |65.47        |3   |
++-------------+-----------------------------------------------------+------------+----------+-------------+----+
+
+=== White-advantage by time-control category (Spark SQL) ===
++-------------+-----------+-------------+--------+
+|time_category|total_games|white_win_pct|draw_pct|
++-------------+-----------+-------------+--------+
+|Blitz        |40105287   |49.59        |4.32    |
+|Bullet       |31670872   |49.99        |2.87    |
+|Rapid        |14234716   |49.54        |4.66    |
+|Classical    |383331     |48.82        |5.99    |
+|Unknown      |64162      |49.00        |3.65    |
++-------------+-----------+-------------+--------+
+
+--- Scaling Experiment Runtime: 2177.79 seconds ---
+Job [6fa1f785b1f747b6be9608e87d1dbe93] finished successfully.
+done: true
+driverControlFilesUri: gs://dataproc-staging-us-west1-1074903516627-swyslmay/google-cloud-dataproc-metainfo/702eb26c-4003-47af-b99e-dd96a3426f29/jobs/6fa1f785b1f747b6be9608e87d1dbe93/
+driverOutputResourceUri: gs://dataproc-staging-us-west1-1074903516627-swyslmay/google-cloud-dataproc-metainfo/702eb26c-4003-47af-b99e-dd96a3426f29/jobs/6fa1f785b1f747b6be9608e87d1dbe93/driveroutput
+jobUuid: af68bcae-a5b8-3d5e-bd47-7498da136f1c
+placement:
+  clusterName: fma-4worker
+  clusterUuid: 702eb26c-4003-47af-b99e-dd96a3426f29
+pysparkJob:
+  mainPythonFileUri: gs://dataproc-staging-us-west1-1074903516627-swyslmay/google-cloud-dataproc-metainfo/702eb26c-4003-47af-b99e-dd96a3426f29/jobs/6fa1f785b1f747b6be9608e87d1dbe93/staging/analysis.py#1785708905266197
+reference:
+  jobId: 6fa1f785b1f747b6be9608e87d1dbe93
+  projectId: promising-cairn-501617-g0
+status:
+  state: DONE
+  stateStartTime: '2026-08-02T22:51:46.315200Z'
+statusHistory:
+- state: PENDING
+  stateStartTime: '2026-08-02T22:15:05.450416Z'
+- state: SETUP_DONE
+  stateStartTime: '2026-08-02T22:15:05.517539Z'
+- details: Agent reported job success
+  state: RUNNING
+  stateStartTime: '2026-08-02T22:15:05.925235Z'
+yarnApplications:
+- memoryMbSeconds: '40589374'
+  name: FirstMoveAdvantage
+  progress: 1.0
+  state: FINISHED
+  trackingUrl: http://fma-4worker-m.c.promising-cairn-501617-g0.internal.:8088/proxy/application_1785708856770_0001/
+  vcoreSeconds: '11982'
