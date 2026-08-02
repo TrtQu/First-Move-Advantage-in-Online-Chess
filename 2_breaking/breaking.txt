@@ -63,16 +63,20 @@ Console output (scripts run, real, captured 2026-07-22):
 Full log: logs/excel_sample_output.txt
 
 Observed Excel result:
-[ACTION NEEDED — see note below] Open excel_over_limit.csv (400 MB,
-10,050,001 rows) in Microsoft Excel. Excel's worksheet limit is 1,048,576
-rows, so Excel will either (a) show the "This data set is too large..." /
-"...only the first 1,048,576 rows were loaded" truncation dialog on import,
-or (b) silently truncate to the row cap depending on the open method used
-(double-click vs. Data > From Text/CSV). Record which one happens and how
-long Excel takes to open/hang before showing it.
+Opened excel_over_limit.csv (400 MB, 10,050,001 rows) directly in Microsoft
+Excel (double-click). The first sign of truncation was the status bar's row
+count readout, which read exactly 1,048,576 (1,048,575 data rows + the
+header) once the sheet finished loading -- 9,001,425 rows (89.6% of the
+file) were silently dropped, with nothing in the grid itself flagging that
+anything was cut. Excel then raised an explicit warning dialog on its own
+shortly after load finished:
+
+  "Microsoft Excel
+   [warning icon] This data set is too large for the Excel grid. If you
+   save this workbook, you'll lose data that wasn't loaded."
 
 Evidence:
-screenshots/excel_failure.png  [MISSING — see note below]
+screenshots/excel_failure.png -- the warning dialog above, captured live.
 
 
 PANDAS BREAKING-POINT TEST
@@ -125,24 +129,30 @@ logs/pandas_error.txt   (empty — see explanation above)
 logs/pandas_memory_log.txt
 logs/pandas_summary.txt
 
+Live re-run for the Task Manager screenshot (2026-08-02): the original
+8.913 GiB file was no longer available locally by the time the screenshot
+was captured, so the same script was re-run against a fresh 8.382 GiB
+sample streamed from the same Lichess source. That run happened not to hit
+the specific bad byte and completed instead of crashing (status=COMPLETED,
+elapsed_seconds=115.03), but its peak RSS was 8.746 GiB — matching the
+original run's 8.795 GiB peak almost exactly for a same-sized input. Same
+conclusion either way: pandas.read_csv() with no chunksize pulls the
+entire file into memory before doing anything else with it. The screenshot
+below was taken at elapsed≈95-100s, right at that peak.
+
 Evidence:
-screenshots/pandas_memory_failure.png  [MISSING — see note below]
+screenshots/pandas_memory_failure.png -- Task Manager, Python process at
+8,980.8 MB RSS ("Very high" power usage, sorted to the top of Processes),
+captured live during the re-run above.
 
 
-ACTION NEEDED — screenshots
-----------------------------
-The screenshots/ folder is currently empty. The rubric requires:
-  1. A screenshot of Excel's row-cap warning/truncation when opening
-     excel_over_limit.csv (still present at
-     Z:\lichess_db_standard_rated_2026-06.pgn\excel_over_limit.csv — just
-     double-click it or open it via Excel's Data > From Text/CSV).
-  2. A screenshot of Task Manager (or Resource Monitor) showing the pandas
-     process's memory climbing toward the ~8.8 GiB peak while
-     `python scripts\pandas_pgn_test.py <path-to-pgn>` runs — the numeric
-     evidence already exists in pandas_memory_log.txt, but the rubric asks
-     for a screenshot specifically.
-Save both PNGs into 2_breaking/screenshots/ and update the two "Evidence"
-lines above once done.
+SCREENSHOTS — captured 2026-08-02
+------------------------------------
+Both required screenshots are now in screenshots/:
+  1. excel_failure.png — Excel's "This data set is too large for the
+     Excel grid" dialog, opening excel_over_limit.csv.
+  2. pandas_memory_failure.png — Task Manager showing the pandas child
+     process at 8,980.8 MB RSS while pandas_pgn_test.py runs.
 
 
 COMMAND-LINE VS. SPARK AGGREGATION (same computation, two ways)
@@ -182,6 +192,6 @@ The repository contains:
 - experiment scripts
 - console output
 - memory measurements
-- screenshots (pending — see ACTION NEEDED above)
+- screenshots
 - a small sample file
 - this experimentation record
