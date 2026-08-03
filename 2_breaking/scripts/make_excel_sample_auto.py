@@ -1,4 +1,5 @@
-﻿import csv
+﻿#Similar to make_excel_sample.py.
+import csv
 import io
 import sys
 import time

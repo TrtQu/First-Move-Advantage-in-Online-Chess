@@ -19,9 +19,7 @@ spark = SparkSession.builder.appName("FirstMoveAdvantage").getOrCreate()
 
 start_time = time.time()
 
-# ---------------------------------------------------------------------------
-# 1. Read the raw PGN directly from GCS (never copied into the home dir)
-# ---------------------------------------------------------------------------
+# 1. Read the raw PGN directly from GCS
 # .zst is not a splittable codec, so spark.read.text() on a single .zst file
 # always yields exactly ONE partition: the decompression itself is
 # unavoidably a single-task/single-core step no matter how large the
@@ -45,9 +43,7 @@ gcs_path = "gs://promising-cairn-501617-g0-cs131-lichess/lichess_db_standard_rat
 df_raw = spark.read.option("lineSep", "\n\n").text(gcs_path)
 tag_blocks = df_raw.filter(col("value").startswith("[Event ")).repartition(200)
 
-# ---------------------------------------------------------------------------
 # 2. Explicit schema for the parsed, one-row-per-game table
-# ---------------------------------------------------------------------------
 game_schema = StructType([
     StructField("white_elo", IntegerType(), True),
     StructField("black_elo", IntegerType(), True),
@@ -102,9 +98,7 @@ def parse_tag_blocks(iterator):
 parsed_rdd = tag_blocks.rdd.mapPartitions(parse_tag_blocks)
 games = spark.createDataFrame(parsed_rdd, schema=game_schema)
 
-# ---------------------------------------------------------------------------
 # 3. Transform: Elo bracket, time-control category, win-flag columns
-# ---------------------------------------------------------------------------
 def base_seconds(tc_col):
     # "180+0" -> 180 ; malformed/"-" values fall through to null
     return when(tc_col.contains("+"), substring_index(tc_col, "+", 1).cast("int"))
@@ -130,9 +124,7 @@ games = games.filter(col("result").isin("1-0", "0-1", "1/2-1/2")) \
 # avoids re-running the PGN parse three times.
 games.cache()
 
-# ---------------------------------------------------------------------------
 # 4. groupBy: White/Black win % and draw % per Elo bracket
-# ---------------------------------------------------------------------------
 elo_stats = games.groupBy("elo_bracket").agg(
     spark_sum("white_win").alias("white_wins"),
     spark_sum("black_win").alias("black_wins"),
@@ -147,10 +139,8 @@ elo_stats = games.groupBy("elo_bracket").agg(
 print("=== White-advantage by Elo bracket ===")
 elo_stats.show(30, truncate=False)
 
-# ---------------------------------------------------------------------------
 # 5. Join: label each Elo bracket with a skill tier from a small reference
-#    DataFrame (range join on elo_bracket BETWEEN tier_min AND tier_max)
-# ---------------------------------------------------------------------------
+#  DataFrame (range join on elo_bracket BETWEEN tier_min AND tier_max)
 tier_rows = [
     (0, 800, "Beginner"),
     (800, 1200, "Novice"),
@@ -176,10 +166,7 @@ elo_stats_with_tier = elo_stats.join(
 print("=== White-advantage by Elo bracket, joined with skill-tier labels ===")
 elo_stats_with_tier.show(30, truncate=False)
 
-# ---------------------------------------------------------------------------
-# 6. Window function: top-3 openings per time-control category, ranked by
-#    how often White wins with them
-# ---------------------------------------------------------------------------
+# 6. Window function: top-3 openings per time-control category, ranked by how often White wins with them
 opening_stats = games.filter(col("opening").isNotNull()).groupBy("time_category", "opening").agg(
     count("*").alias("games_played"),
     spark_sum("white_win").alias("white_wins"),
@@ -194,9 +181,7 @@ top_openings = opening_stats.withColumn("rank", row_number().over(rank_window)) 
 print("=== Top 3 openings for White, by time-control category ===")
 top_openings.show(30, truncate=False)
 
-# ---------------------------------------------------------------------------
 # 7. Spark SQL: same white-advantage question, expressed declaratively
-# ---------------------------------------------------------------------------
 games.createOrReplaceTempView("games")
 sql_stats = spark.sql("""
     SELECT
