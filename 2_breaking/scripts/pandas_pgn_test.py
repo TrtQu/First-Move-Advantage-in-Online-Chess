@@ -77,6 +77,9 @@ def monitor_test(pgn_path: Path, timeout_seconds: int) -> int:
         error_path.open("w", encoding="utf-8", buffering=1) as error_file,
         memory_log_path.open("w", encoding="utf-8", buffering=1) as memory_log,
     ):
+        # pandas runs in a child process (not imported directly) so a crash --
+        # MemoryError, OOM kill, decode error -- can't take this monitoring
+        # loop down with it; the parent just watches the child's exit code.
         child = subprocess.Popen(
             [
                 sys.executable,
@@ -100,6 +103,8 @@ def monitor_test(pgn_path: Path, timeout_seconds: int) -> int:
         print("Open Task Manager now and watch the Python process.")
         print()
 
+        # Poll rather than just child.wait(): sampling RSS every 5s while the
+        # child is alive is how peak_rss and the memory log get built at all.
         while child.poll() is None:
             elapsed = time.perf_counter() - start
 
@@ -124,6 +129,8 @@ def monitor_test(pgn_path: Path, timeout_seconds: int) -> int:
                 rss = child_process.memory_info().rss
                 peak_rss = max(peak_rss, rss)
             except psutil.Error:
+                # Child can exit between poll() and this call; don't let a
+                # one-off race kill the whole monitoring loop.
                 rss = 0
 
             system_memory = psutil.virtual_memory()
@@ -141,6 +148,9 @@ def monitor_test(pgn_path: Path, timeout_seconds: int) -> int:
             memory_log.write(line + "\n")
 
             time.sleep(5)
+
+        # poll() again post-loop: covers both the timeout branch (terminated/
+        # killed above) and the normal-exit branch (loop condition failed).
 
         return_code = child.poll()
         elapsed = time.perf_counter() - start

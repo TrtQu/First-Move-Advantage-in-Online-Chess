@@ -19,31 +19,30 @@ spark = SparkSession.builder.appName("FirstMoveAdvantage").getOrCreate()
 
 start_time = time.time()
 
-# 1. Read the raw PGN directly from GCS
-# .zst is not a splittable codec, so spark.read.text() on a single .zst file
-# always yields exactly ONE partition: the decompression itself is
-# unavoidably a single-task/single-core step no matter how large the
-# cluster is. Everything downstream of that read does NOT need to stay on
-# one core, though -- repartition() shuffles the records out across the
-# cluster before the CPU-heavy PGN parsing and the aggregations run, which
-# is what actually lets 2- and 4-worker clusters outrun the 1-worker
-# baseline in the scaling experiment.
-#
-# The record delimiter is set to a blank line ("\n\n") instead of the
-# default single newline, so each row Spark reads is already one complete,
-# self-contained PGN block (either the full multi-line tag header for one
-# game, or its movetext) rather than one physical line. That removes any
-# need to track state across rows to reassemble a game, which is what makes
-# it safe to repartition (shuffle) afterward -- a stateful "carry the
-# previous line's partial game" parser would silently produce wrong results
-# once rows are redistributed out of file order.
+# Read the raw PGN directly from GCS.
+
+# .zst isn't splittable, so spark.read.text() on a single .zst file always
+# produces exactly ONE partition -- decompression is unavoidably a single
+# core, single task, regardless of cluster size. That serial read is the
+# fixed floor under total runtime; everything after it is free to spread
+# across the cluster. repartition() below is what shuffles records out
+# before the CPU-heavy parsing and aggregations run, which is why 2- and
+# 4-worker clusters still beat the 1-worker baseline overall.
+
+# lineSep is set to a blank line ("\n\n") rather than the default single
+# newline, so each row is already one complete PGN block (a game's full
+# tag header, or its movetext) instead of one physical line. That makes
+# every row self-contained -- no state needs to carry across rows to
+# reassemble a game -- which is what makes the later repartition (shuffle)
+# safe. A parser that carried partial-game state between lines would
+# silently break once rows got redistributed out of file order.
 spark.sparkContext.setLogLevel("WARN")
 
 gcs_path = "gs://promising-cairn-501617-g0-cs131-lichess/lichess_db_standard_rated_2026-06.pgn.zst"
 df_raw = spark.read.option("lineSep", "\n\n").text(gcs_path)
 tag_blocks = df_raw.filter(col("value").startswith("[Event ")).repartition(200)
 
-# 2. Explicit schema for the parsed, one-row-per-game table
+#Explicit schema for the parsed, one-row-per-game table
 game_schema = StructType([
     StructField("white_elo", IntegerType(), True),
     StructField("black_elo", IntegerType(), True),
@@ -98,7 +97,7 @@ def parse_tag_blocks(iterator):
 parsed_rdd = tag_blocks.rdd.mapPartitions(parse_tag_blocks)
 games = spark.createDataFrame(parsed_rdd, schema=game_schema)
 
-# 3. Transform: Elo bracket, time-control category, win-flag columns
+#Transform: Elo bracket, time-control category, win-flag columns
 def base_seconds(tc_col):
     # "180+0" -> 180 ; malformed/"-" values fall through to null
     return when(tc_col.contains("+"), substring_index(tc_col, "+", 1).cast("int"))
@@ -119,12 +118,12 @@ games = games.filter(col("result").isin("1-0", "0-1", "1/2-1/2")) \
     .withColumn("black_win", when(col("result") == "0-1", 1).otherwise(0)) \
     .withColumn("draw", when(col("result") == "1/2-1/2", 1).otherwise(0))
 
-# Cached: this DataFrame feeds three separate actions below (elo-bracket
-# stats, the elo-tier join, and the windowed top-openings query), so caching
-# avoids re-running the PGN parse three times.
+#Cached: this DataFrame feeds three separate actions below (elo-bracket
+#stats, the elo-tier join, and the windowed top-openings query), so caching
+#avoids re-running the PGN parse three times.
 games.cache()
 
-# 4. groupBy: White/Black win % and draw % per Elo bracket
+#groupBy: White/Black win % and draw % per Elo bracket
 elo_stats = games.groupBy("elo_bracket").agg(
     spark_sum("white_win").alias("white_wins"),
     spark_sum("black_win").alias("black_wins"),
@@ -139,7 +138,7 @@ elo_stats = games.groupBy("elo_bracket").agg(
 print("=== White-advantage by Elo bracket ===")
 elo_stats.show(30, truncate=False)
 
-# 5. Join: label each Elo bracket with a skill tier from a small reference
+#Join: label each Elo bracket with a skill tier from a small reference
 #  DataFrame (range join on elo_bracket BETWEEN tier_min AND tier_max)
 tier_rows = [
     (0, 800, "Beginner"),
@@ -166,7 +165,7 @@ elo_stats_with_tier = elo_stats.join(
 print("=== White-advantage by Elo bracket, joined with skill-tier labels ===")
 elo_stats_with_tier.show(30, truncate=False)
 
-# 6. Window function: top-3 openings per time-control category, ranked by how often White wins with them
+#Window function: top-3 openings per time-control category, ranked by how often White wins with them
 opening_stats = games.filter(col("opening").isNotNull()).groupBy("time_category", "opening").agg(
     count("*").alias("games_played"),
     spark_sum("white_win").alias("white_wins"),
@@ -181,7 +180,7 @@ top_openings = opening_stats.withColumn("rank", row_number().over(rank_window)) 
 print("=== Top 3 openings for White, by time-control category ===")
 top_openings.show(30, truncate=False)
 
-# 7. Spark SQL: same white-advantage question, expressed declaratively
+#Spark SQL: same white-advantage question, expressed declaratively
 games.createOrReplaceTempView("games")
 sql_stats = spark.sql("""
     SELECT
